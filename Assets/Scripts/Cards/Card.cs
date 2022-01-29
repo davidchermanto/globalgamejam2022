@@ -2,24 +2,38 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Card : MonoBehaviour
+public struct SavedCard
 {
-    [Header("Display")]
-    [SerializeField] private Sprite icon;
+    public string label;
+    public int id;
+    public int damage;
+}
 
-    [SerializeField] private string text;
+public class Card
+{
+    [Header("Dependency")]
+    [SerializeField] protected PlayerManager playerManager;
+
+    public int displayId;
+
+    [Header("Display")]
+    public string cardLabel;
+    public string cardName;
+
+    [SerializeField] protected Sprite icon;
+
+    [SerializeField] protected string text;
 
     [Header("Combat")]
-    [SerializeField] private int damage;
-    [SerializeField] private bool singleTarget;
-    [SerializeField] private bool isLight;
-    [SerializeField] private int orbValue;
+    [SerializeField] protected int damage;
+    [SerializeField] protected bool singleTarget;
+    [SerializeField] protected bool isLight;
+    [SerializeField] protected int orbValue;
+    [SerializeField] protected bool passive;
 
-    [SerializeField] private bool passive;
-
-    public virtual void Setup()
+    public virtual void Setup(Sprite icon)
     {
-
+        this.icon = icon;
     }
 
     public virtual void OnUse()
@@ -47,14 +61,27 @@ public class Card : MonoBehaviour
 
     }
 
-    public virtual void OnFinishBattle()
+    public virtual void OnEndTurn()
     {
 
     }
 
     public virtual string GetText()
     {
-        return text.Replace("<damage>", damage.ToString());
+        string orbColor;
+
+        if (isLight)
+        {
+            orbColor = "Light";
+        }
+        else
+        {
+            orbColor = "Dark";
+        }
+
+        return text.Replace("<damage>", damage.ToString())
+            .Replace("<orbValue>", orbValue.ToString())
+            .Replace("<orbColor>", orbColor);
     }
 
     public virtual int GetDamage()
@@ -75,5 +102,10 @@ public class Card : MonoBehaviour
     public virtual int GetOrbValue()
     {
         return orbValue;
+    }
+
+    public virtual Sprite GetIcon()
+    {
+        return icon;
     }
 }

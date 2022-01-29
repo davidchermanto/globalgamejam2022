@@ -14,10 +14,6 @@ public struct EnemyStruct
 
     public float healthPerFloor;
     public float attackPerFloor;
-
-    public AudioClip attackingSfx;
-    public AudioClip attackedSfx;
-    public AudioClip deathSfx;
 }
 
 public class EnemyDatabase : MonoBehaviour
