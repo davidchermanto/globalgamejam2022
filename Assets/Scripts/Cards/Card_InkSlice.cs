@@ -4,15 +4,13 @@ using UnityEngine;
 
 public class Card_InkSlice : Card
 {
-    public override void Setup(Sprite icon)
+    public override void Setup()
     {
-        this.icon = icon;
-
         cardName = "Ink Slice";
         cardLabel = "inkslice";
-        text = "Deals <damage> Damage to 1 target.";
+        text = "Deals <damage> Damage to 1 target. Gains <orbValue> <orbColor> Orb.";
 
-        damage = Random.Range(4, 6);
+        damage = Random.Range(5, 7);
         orbValue = 1;
 
         singleTarget = true;
@@ -37,5 +35,7 @@ public class Card_InkSlice : Card
 
         // do visual effects
         playerManager.DisplayAttackEffect(enemy.GetEnemyDisplayer(), "slash");
+
+        CameraEffects.Instance.Shake();
     }
 }

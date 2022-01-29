@@ -16,6 +16,8 @@ public class PlayerManager : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private List<SpriteRenderer> lightOrbs;
+    [SerializeField] private List<SpriteRenderer> darkOrbs;
 
     [Header("Combat")]
     public bool isPlayerTurn;
@@ -37,30 +39,81 @@ public class PlayerManager : MonoBehaviour
     {
         ownedCards = initialCards;
 
-        // todo
-        activeCards = initialCards;
-
-        cardDisplayer.AddCards(ownedCards);
-
         maxHealth = baseHealth;
         health = baseHealth;
 
         UpdateHealthBar();
     }
-    // Darras
+
+    // Picks cards
     public void DrawCards()
     {
-        
+        int maxSize = ownedCards.Count;
+        List<int> intList = new List<int>();
+
+        for(int i = 0; i < maxSize; i++)
+        {
+            intList.Add(i);
+        }
+
+        while(intList.Count > 5)
+        {
+            intList.RemoveAt(Random.Range(0, intList.Count - 1));
+        }
+
+        // Shuffle
+        for(int i = 0; i < 20; i++)
+        {
+            int indexOne = Random.Range(0, intList.Count - 1);
+            int indexTwo = Random.Range(0, intList.Count - 1);
+
+            int number = intList[indexOne];
+            intList[indexOne] = intList[indexTwo];
+            intList[indexTwo] = number;
+        }
+
+        activeCards = new List<Card>();
+
+        foreach (int i in intList)
+        {
+            activeCards.Add(ownedCards[i]);
+            ownedCards[i].used = false;
+        }
+
+        cardDisplayer.AddCards(activeCards);
+    }
+
+    public void DeleteAllCards()
+    {
+        cardDisplayer.DestroyAllCards();
+        activeCards = new List<Card>();
     }
 
     public void UseCard(int cardIndex)
     {
-        activeCards[cardIndex].OnUse();
+        GetActiveCardByIndex(cardIndex).OnUse();
+        GetActiveCardByIndex(cardIndex).used = true;
+
+        OnCardUseAfter();
     }
 
     public void UseCardTargetted(int cardIndex, Enemy enemy)
     {
-        activeCards[cardIndex].OnUseTargetted(enemy);
+        GetActiveCardByIndex(cardIndex).OnUseTargetted(enemy);
+        GetActiveCardByIndex(cardIndex).used = true;
+
+        OnCardUseAfter();
+    }
+
+    private void OnCardUseAfter()
+    {
+        //UpdateCards();
+        gameManager.EvaluateFloor();
+
+        if (GetUnusedCards().Count == 0 && !gameManager.isEnemyTurn)
+        {
+            OnEndTurn();
+        }
     }
 
     public void OnAttack()
@@ -102,64 +155,49 @@ public class PlayerManager : MonoBehaviour
 
     public void OnStartTurn()
     {
-
+        DrawCards();
     }
 
     public void OnEndTurn()
     {
-        foreach (Card card in activeCards)
+        if (!gameManager.isEnemyTurn)
         {
-            card.OnEndTurn();
-        }
+            foreach (Card card in activeCards)
+            {
+                card.OnEndTurn();
+            }
 
-        gameManager.OnEnemyTurn();
+            cardDisplayer.DestroyAllCards();
+
+            gameManager.OnEnemyTurn();
+        }
     }
 
     public void AddOrb(int count, bool isLight)
     {
+        int absoluteValue = lightOrb - darkOrb;
+
         if (isLight)
         {
-            if(darkOrb > 0)
-            {
-                darkOrb -= count;
-
-                if(darkOrb < 0)
-                {
-                    lightOrb = -darkOrb;
-                    darkOrb = 0;
-
-                    TestOrbOverload();
-                }
-            }
-            else
-            {
-                lightOrb += count;
-
-                TestOrbOverload();
-            }
+            absoluteValue += count;
         }
         else
         {
-            if (lightOrb > 0)
-            {
-                lightOrb -= count;
-
-                if (lightOrb < 0)
-                {
-                    darkOrb = -lightOrb;
-                    lightOrb = 0;
-
-                    TestOrbOverload();
-                }
-            }
-            else
-            {
-                darkOrb += count;
-
-                TestOrbOverload();
-            }
+            absoluteValue -= count;
         }
 
+        if(absoluteValue < 0)
+        {
+            darkOrb = Mathf.Abs(absoluteValue);
+            lightOrb = 0;
+        }
+        else
+        {
+            lightOrb = absoluteValue;
+            darkOrb = 0;
+        }
+
+        TestOrbOverload();
         UpdateOrbDisplay();
     }
 
@@ -186,7 +224,17 @@ public class PlayerManager : MonoBehaviour
 
     public void OnOrbOverload(bool isLight)
     {
-        // lose half of current HP
+        TakeDamage(Mathf.FloorToInt(health / 2), isLight);
+
+        darkOrb = 0;
+        lightOrb = 0;
+
+        UpdateOrbDisplay();
+    }
+
+    public void UpdateCard(Card card)
+    {
+        cardDisplayer.UpdateCard(card);
     }
 
     public void DisplayAttackEffectAll(string effectType)
@@ -203,12 +251,43 @@ public class PlayerManager : MonoBehaviour
     {
         if(enemy != null)
         {
+            GameObject effect = null;
 
+            switch (effectType)
+            {
+                case "slash":
+                    effect = specialEffects[0];
+                    break;
+                case "cross":
+                    effect = specialEffects[1];
+                    break;
+                default:
+                    break;
+            }
+
+            if(effect != null)
+            {
+                GameObject newEffect = Instantiate(effect);
+                newEffect.transform.position = enemy.transform.position;
+            }
         }
         else
         {
             // What
         }
+    }
+
+    public Card GetActiveCardByIndex(int index)
+    {
+        foreach(Card card in activeCards)
+        {
+            if(card.displayId == index)
+            {
+                return card;
+            }
+        }
+
+        return null;
     }
 
     public GameObject GetSpecialEffect(string effectType)
@@ -220,7 +299,45 @@ public class PlayerManager : MonoBehaviour
 
     private void UpdateOrbDisplay()
     {
+        if(lightOrb > 0)
+        {
+            for (int i = 0; i < darkOrbs.Count; i++)
+            {
+                darkOrbs[i].gameObject.SetActive(false);
+            }
 
+            for (int i = 0; i < lightOrbs.Count; i++)
+            {
+                if (i < lightOrb)
+                {
+                    lightOrbs[i].gameObject.SetActive(true);
+                }
+                else
+                {
+                    lightOrbs[i].gameObject.SetActive(false);
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < lightOrbs.Count; i++)
+            {
+                lightOrbs[i].gameObject.SetActive(false);
+            }
+
+            for (int i = 0; i < darkOrbs.Count; i++)
+            {
+                if(i < darkOrb)
+                {
+                    darkOrbs[i].gameObject.SetActive(true);
+                }
+                else
+                {
+                    darkOrbs[i].gameObject.SetActive(false);
+                }
+
+            }
+        }
     }
 
     private void UpdateHealthBar()
@@ -241,6 +358,21 @@ public class PlayerManager : MonoBehaviour
     public List<Card> GetActiveCards()
     {
         return activeCards;
+    }
+
+    public List<Card> GetUnusedCards()
+    {
+        List<Card> cards = new List<Card>();
+
+        foreach(Card card in activeCards)
+        {
+            if (!card.used)
+            {
+                cards.Add(card);
+            }
+        }
+
+        return cards;
     }
 
     public int GetHealth()

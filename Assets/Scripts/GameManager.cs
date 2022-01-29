@@ -21,7 +21,11 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Enemy enemyRight;
 
     [Header("Other")]
+    public bool isEnemyTurn;
+
     [SerializeField] public List<string> possibleCards;
+    [SerializeField] public List<string> possibleEnemies;
+
     [SerializeField] private int currentFloor;
 
     void Start()
@@ -38,21 +42,60 @@ public class GameManager : MonoBehaviour
     {
         List<Card> initialCards = new List<Card>();
 
-        initialCards.Add(cardDatabase.GetNewCard("inkslice"));
-        initialCards.Add(cardDatabase.GetNewCard("inkslice"));
-        initialCards.Add(cardDatabase.GetNewCard("inkslice"));
-        initialCards.Add(cardDatabase.GetNewCard("inkslice"));
-        initialCards.Add(cardDatabase.GetNewCard("inkslice"));
+        string label = "inkslice";
+
+        Card card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        initialCards.Add(card);
+
+        card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        initialCards.Add(card);
+
+        card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        initialCards.Add(card);
+
+        label = "inksplash";
+
+        card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        initialCards.Add(card);
+
+        card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        label = "inspire";
+
+        card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        card = cardDatabase.GetNewCard(label);
+        card.Setup();
+        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        initialCards.Add(card);
 
         return initialCards;
     }
 
     public void OnPlay()
     {
-        // give 8 cards to player
+        // draw player cards?
+        playerManager.DrawCards();
 
         // generate 3 enemies
-
+        GenerateThreeEnemies();
 
         // start player turn
         OnPlayerTurn();
@@ -70,47 +113,87 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator EnemyTurnCoroutine()
     {
-        float timer = 0;
-        float delayPerEnemy = 0.5f;
+        isEnemyTurn = true;
 
-        List<Enemy> enemies = GetEnemies();
+        float delayPerEnemy = 0.75f;
+
+        List<Enemy> enemies = GetLivingEnemies();
         int enemyLooped = 0;
 
-        while(enemyLooped != 3)
+        yield return new WaitForSeconds(delayPerEnemy);
+
+        while (enemyLooped != enemies.Count)
         {
-            while(timer < 1)
-            {
-                timer += Time.deltaTime / delayPerEnemy;
+            enemies[enemyLooped].OnAttack();
 
-                enemies[enemyLooped].OnAttack();
+            yield return new WaitForSeconds(delayPerEnemy);
 
-                yield return new WaitForEndOfFrame();
-            }
-
-            timer = 0;
             enemyLooped++;
         }
 
+        isEnemyTurn = false;
         playerManager.OnStartTurn();
+    }
+
+    public void EvaluateFloor()
+    {
+        if(GetLivingEnemies().Count == 0)
+        {
+            isEnemyTurn = true;
+            OnClearFloor();
+        }
     }
 
     public void OnClearFloor()
     {
+        playerManager.DeleteAllCards();
+        StartCoroutine(ClearAnimation());
+    }
+
+    private IEnumerator ClearAnimation()
+    {
         currentFloor++;
 
+        // offer player a new card?
+
         // play mountain animation for 3 secs
+        yield return new WaitForSeconds(3);
 
         // generate new enemies
+        OnPlay();
     }
 
     public void GenerateThreeEnemies()
     {
-
+        enemyLeft = GenerateEnemy("left");
+        enemyMid = GenerateEnemy("mid");
+        enemyRight = GenerateEnemy("right");
     }
 
-    public void GenerateEnemy()
+    public Enemy GenerateEnemy(string direction)
     {
+        string label = possibleEnemies[Random.Range(0, 2 /*Mathf.Min(currentFloor + 2, 10)*/)];
 
+        Enemy enemy = enemyDatabase.GetEnemy(label);
+        EnemyStruct enemyStruct = enemyDatabase.GetEnemyStruct(currentFloor, label);
+        Sprite enemySprite = enemyDatabase.GetEnemySprite(label);
+
+        enemy.SetColor();
+
+        switch (direction)
+        {
+            case "left":
+                enemy.Setup(enemyStruct, enemyLeftDisplayer, playerManager, enemySprite);
+                break;
+            case "mid":
+                enemy.Setup(enemyStruct, enemyMidDisplayer, playerManager, enemySprite);
+                break;
+            case "right":
+                enemy.Setup(enemyStruct, enemyRightDisplayer, playerManager, enemySprite);
+                break;
+        }
+
+        return enemy;
     }
 
     public List<Enemy> GetEnemies()
@@ -121,6 +204,28 @@ public class GameManager : MonoBehaviour
             enemyMid,
             enemyRight
         };
+
+        return list;
+    }
+
+    public List<Enemy> GetLivingEnemies()
+    {
+        List<Enemy> list = new List<Enemy>();
+
+        if (enemyLeft.isAlive())
+        {
+            list.Add(enemyLeft);
+        }
+
+        if (enemyMid.isAlive())
+        {
+            list.Add(enemyMid);
+        }
+
+        if (enemyRight.isAlive())
+        {
+            list.Add(enemyRight);
+        }
 
         return list;
     }

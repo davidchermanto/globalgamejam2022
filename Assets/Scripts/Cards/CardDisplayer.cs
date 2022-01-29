@@ -36,6 +36,8 @@ public class CardDisplayer : MonoBehaviour
 
     [Header("Pre-stored positions")]
     private Vector3 cardScale = new Vector3(1.2f, 1f);
+    private Vector3 cardScaleLarge = new Vector3(1.44f, 1.2f);
+    private float slideUpDistance = 1.6f;
     private List<List<Vector3>> cardPos = new List<List<Vector3>>
     {
         new List<Vector3>
@@ -103,20 +105,15 @@ public class CardDisplayer : MonoBehaviour
                     }
                     else
                     {
-                        OnTryUseCardUntargeted(currentDraggedId);
+                        ShrinkCard(currentDraggedId);
                     }
                 }
                 else
                 {
-                    OnTryUseCardUntargeted(currentDraggedId);
+                    ShrinkCard(currentDraggedId);
                 }
             }
         }
-    }
-
-    public void UpdateCards(List<Card> cards)
-    {
-
     }
 
     // Arranges cards in canvas
@@ -151,7 +148,8 @@ public class CardDisplayer : MonoBehaviour
         cardObject.transform.SetParent(cardFolder.transform);
 
         CardDisplay cardDisplay = cardObject.GetComponent<CardDisplay>();
-        cardDisplay.UpdateValues(card.GetIcon(), card.GetText(), card.GetOrbValue(), GetCardByColor(card.GetIsLight()), currentId);
+        cardDisplay.UpdateValues(card.GetIcon(), card.GetText(), card.GetOrbValue(), 
+            GetCardByColor(card.GetIsLight()), currentId, card.GetIsLight(), card.GetTitle());
         card.displayId = currentId;
 
         EventTrigger eventTrigger = cardObject.GetComponent<EventTrigger>();
@@ -171,19 +169,60 @@ public class CardDisplayer : MonoBehaviour
         return true;
     }
 
+    public void UpdateCard(Card card)
+    {
+        GetCardByID(card.displayId).UpdateValues(card.GetIcon(), card.GetText(), card.GetOrbValue(),
+            GetCardByColor(card.GetIsLight()), card.displayId, card.GetIsLight(), card.GetTitle());
+    }
+
     public void DestroyAllCards()
     {
         for(int i = activeCards.Count; i > 0; i--)
         {
-            DestroyCard(i);
+            DestroyCard(activeCards[0]);
         }
     }
 
-    public void DestroyCard(int index)
+    public void DestroyCard(int id)
     {
-        CardDisplay cardDisplay = activeCards[index];
+        CardDisplay cardDisplay = GetCardByID(id);
 
-        activeCards.RemoveAt(index);
+        if(cardDisplay != null)
+        {
+            activeCards.Remove(cardDisplay);
+
+            StartCoroutine(FadeCardOut(cardDisplay));
+        }
+    }
+
+    public void DestroyCard(CardDisplay cardDisplay)
+    {
+        if (cardDisplay != null)
+        {
+            activeCards.Remove(cardDisplay);
+
+            StartCoroutine(FadeCardOut(cardDisplay));
+        }
+    }
+
+    private IEnumerator FadeCardOut(CardDisplay cardDisplay)
+    {
+        float timer = 0;
+        float duration = 0.25f;
+
+        Destroy(cardDisplay.GetComponent<Button>());
+        Destroy(cardDisplay.GetComponent<EventTrigger>());
+
+        CanvasGroup canvasGroup = cardDisplay.GetComponent<CanvasGroup>();
+
+        while(timer < 1)
+        {
+            timer += Time.deltaTime / duration;
+
+            canvasGroup.alpha = Mathf.Lerp(1, 0, timer);
+
+            yield return new WaitForEndOfFrame();
+        }
 
         Destroy(cardDisplay.gameObject);
     }
@@ -201,18 +240,41 @@ public class CardDisplayer : MonoBehaviour
         lineRenderer.SetPosition(0, startDrag);
 
         // expand the card and push it up a bit
-        GetCardByID(cardId).transform.SetParent(cardActiveFolder.transform);
+        ExpandCard(cardId);
+    }
+
+    private void ExpandCard(int cardId)
+    {
+        CardDisplay cardDisplay = GetCardByID(cardId);
+
+        cardDisplay.transform.SetParent(cardActiveFolder.transform);
+        cardDisplay.transform.localScale = cardScaleLarge;
+        cardDisplay.transform.position = new Vector3(cardDisplay.transform.position.x, cardDisplay.transform.position.y * slideUpDistance);
+    }
+
+    private void ShrinkCard(int cardId)
+    {
+        CardDisplay cardDisplay = GetCardByID(cardId);
+
+        cardDisplay.transform.SetParent(cardFolder.transform);
+        cardDisplay.transform.localScale = cardScale;
+
+        ArrangeCards();
     }
 
     public void OnTryUseCardUntargeted(int id)
     {
         draggingCard = false;
 
-        if (!playerManager.GetActiveCards()[id].GetIsPassive())
+        if (!playerManager.GetActiveCards()[id].GetIsPassive() && !playerManager.GetActiveCards()[id].GetIsSingleTarget())
         {
             playerManager.UseCard(id);
 
             DestroyCard(id);
+        }
+        else
+        {
+            ShrinkCard(id);
         }
 
         ArrangeCards();
@@ -222,11 +284,27 @@ public class CardDisplayer : MonoBehaviour
     {
         draggingCard = false;
 
-        if (!playerManager.GetActiveCards()[id].GetIsPassive())
+        if (!playerManager.GetActiveCardByIndex(id).GetIsPassive() && playerManager.GetActiveCardByIndex(id).GetIsSingleTarget())
         {
             playerManager.UseCardTargetted(id, enemyDisplayer.GetEnemy());
 
-            DestroyCard(id);
+            if (playerManager.GetActiveCardByIndex(id) != null)
+            {
+                DestroyCard(id);
+            }
+        }
+        else if (!playerManager.GetActiveCardByIndex(id).GetIsPassive() && !playerManager.GetActiveCardByIndex(id).GetIsSingleTarget())
+        {
+            playerManager.UseCard(id);
+
+            if(playerManager.GetActiveCardByIndex(id) != null)
+            {
+                DestroyCard(id);
+            }
+        }
+        else
+        {
+            ShrinkCard(id);
         }
 
         ArrangeCards();
@@ -254,8 +332,13 @@ public class CardDisplayer : MonoBehaviour
             }
         }
 
-        Debug.LogError("Requested card that doesnt exist: "+id);
+        Debug.LogWarning("Requested card that doesnt exist: "+id);
 
         return null;
+    }
+
+    public int GetCardsCount()
+    {
+        return activeCards.Count;
     }
 }

@@ -19,13 +19,34 @@ public struct EnemyStruct
 public class EnemyDatabase : MonoBehaviour
 {
     [SerializeField] public List<EnemyStruct> enemies;
+    [SerializeField] public List<Sprite> enemySprites;
 
     public void Setup()
     {
 
     }
 
-    public EnemyStruct GetEnemy(int floor, string label)
+    public Enemy GetEnemy(string label)
+    {
+        Enemy enemy = null;
+
+        switch (label)
+        {
+            case "biter_light":
+                enemy = new Enemy_Biter_Light();
+                break;
+            case "biter_dark":
+                enemy = new Enemy_Biter_Dark();
+                break;
+            default:
+                Debug.LogError("Not found label: " + label);
+                break;
+        }
+
+        return enemy;
+    }
+
+    public EnemyStruct GetEnemyStruct(int floor, string label)
     {
         float difficultyMultiplier = 1.1f;
 
@@ -40,8 +61,34 @@ public class EnemyDatabase : MonoBehaviour
             }
         }
 
-        enemyStruct.health = Mathf.FloorToInt((enemyStruct.health + Mathf.FloorToInt(enemyStruct.healthPerFloor * floor)) * Mathf.Pow(difficultyMultiplier, floor));
+        /*if(floor == 0)
+        {
+            floor = 1;
+        }*/
+
+        enemyStruct.health = Mathf.FloorToInt((enemyStruct.health + Mathf.FloorToInt(enemyStruct.healthPerFloor * floor)) * (Mathf.Pow(difficultyMultiplier, floor)));
+        enemyStruct.attack = Mathf.FloorToInt((enemyStruct.attack + Mathf.FloorToInt(enemyStruct.attackPerFloor * floor)) * (Mathf.Pow(difficultyMultiplier, floor)));
 
         return enemyStruct;
+    }
+
+    public Sprite GetEnemySprite(string label)
+    {
+        Sprite sprite = null;
+
+        switch (label)
+        {
+            case "biter_light":
+                sprite = enemySprites[0];
+                break;
+            case "biter_dark":
+                sprite = enemySprites[1];
+                break;
+            default:
+                Debug.LogError("Label not valid: " + label);
+                break;
+        }
+
+        return sprite;
     }
 }

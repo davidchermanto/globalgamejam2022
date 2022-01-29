@@ -15,9 +15,13 @@ public class CardDatabase : MonoBehaviour
             case "inkslice":
                 card = new Card_InkSlice();
                 break;
+            case "inksplash":
+                card = new Card_InkSplash();
+                break;
+            case "inspire":
+                card = new Card_Inspire();
+                break;
         }
-
-        card.Setup(GetSprite(label));
 
         return card;
     }
@@ -28,6 +32,12 @@ public class CardDatabase : MonoBehaviour
         {
             case "inkslice":
                 return cardSprites[0];
+            case "inksplash":
+                return cardSprites[1];
+            case "inspire":
+                return cardSprites[2];
+            case "manifest":
+                return cardSprites[3];
             default:
                 return cardSprites[0];
         }

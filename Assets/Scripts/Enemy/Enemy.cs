@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using TMPro;
-
-public class Enemy : MonoBehaviour
+[System.Serializable]
+public class Enemy
 {
     [Header("Visual")]
+    [SerializeField] protected GameManager gameManager;
     [SerializeField] protected EnemyDisplayer enemyDisplayer;
 
     [SerializeField] protected Sprite sprite;
@@ -18,23 +18,34 @@ public class Enemy : MonoBehaviour
     [SerializeField] protected int attack;
     [SerializeField] protected bool isLight;
 
-    public virtual void Setup(EnemyStruct enemyStruct, EnemyDisplayer enemyDisplayer, PlayerManager playerManager)
+    public virtual void Setup(EnemyStruct enemyStruct, EnemyDisplayer enemyDisplayer, PlayerManager playerManager, Sprite sprite)
     {
         health = enemyStruct.health;
         attack = enemyStruct.attack;
 
         this.enemyDisplayer = enemyDisplayer;
         this.playerManager = playerManager;
+
+        enemyDisplayer.Setup(sprite, health, attack, isLight, this);
+    }
+
+    public virtual void SetColor()
+    {
+
     }
 
     public virtual void OnSpawn()
     {
-
+        enemyDisplayer.OnSpawn();
     }
 
     public virtual void OnAttack()
     {
-
+        if (isAlive())
+        {
+            playerManager.TakeDamage(attack, isLight);
+            enemyDisplayer.OnAttack();
+        }
     }
 
     public virtual void OnTakeDamage(int damage, bool isLight)
@@ -43,7 +54,7 @@ public class Enemy : MonoBehaviour
 
         enemyDisplayer.UpdateHealth(health);
 
-        if(health >= 0)
+        if(health > 0)
         {
             enemyDisplayer.OnAttacked();
         }
@@ -52,15 +63,21 @@ public class Enemy : MonoBehaviour
             enemyDisplayer.OnDie();
         }
 
+        enemyDisplayer.OnAttacked();
     }
 
     public virtual void OnDie()
     {
-
+        enemyDisplayer.OnDie();
     }
 
     public EnemyDisplayer GetEnemyDisplayer()
     {
         return enemyDisplayer;
+    }
+
+    public bool isAlive()
+    {
+        return health > 0;
     }
 }

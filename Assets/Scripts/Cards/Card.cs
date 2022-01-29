@@ -9,9 +9,11 @@ public struct SavedCard
     public int damage;
 }
 
+[System.Serializable]
 public class Card
 {
     [Header("Dependency")]
+    [SerializeField] protected GameManager gameManager;
     [SerializeField] protected PlayerManager playerManager;
 
     public int displayId;
@@ -31,8 +33,17 @@ public class Card
     [SerializeField] protected int orbValue;
     [SerializeField] protected bool passive;
 
-    public virtual void Setup(Sprite icon)
+    public bool used;
+
+    public virtual void Setup()
     {
+        
+    }
+
+    public virtual void SetupDependencies(Sprite icon, PlayerManager playerManager, GameManager gameManager)
+    {
+        this.playerManager = playerManager;
+        this.gameManager = gameManager;
         this.icon = icon;
     }
 
@@ -84,6 +95,11 @@ public class Card
             .Replace("<orbColor>", orbColor);
     }
 
+    public virtual void AddDamage(int damage)
+    {
+        this.damage += damage;
+    }
+
     public virtual int GetDamage()
     {
         return damage;
@@ -97,6 +113,16 @@ public class Card
     public virtual bool GetIsPassive()
     {
         return passive;
+    }
+
+    public virtual string GetTitle()
+    {
+        return cardName;
+    }
+
+    public virtual bool GetIsSingleTarget()
+    {
+        return singleTarget;
     }
 
     public virtual int GetOrbValue()
