@@ -8,22 +8,15 @@ public class Card_Inspire : Card
     {
         cardName = "Inspiration";
         cardLabel = "inspire";
-        text = "Gives a random card in deck <damage> bonus damage.";
+        text = "Gives a random card in deck <damage> bonus damage. Gains <orbValue> <orbColor> Orb.";
 
         damage = Random.Range(2, 3);
-        orbValue = 2;
+        orbValue = 1;
 
         singleTarget = false;
         passive = false;
 
-        if (Random.Range(0, 2) == 0)
-        {
-            isLight = true;
-        }
-        else
-        {
-            isLight = false;
-        }
+        isLight = true;
     }
 
     public override void OnUse()
@@ -32,6 +25,8 @@ public class Card_Inspire : Card
 
         List<Card> cards = playerManager.GetUnusedCards();
 
+        int tries = 0;
+
         if(cards.Count > 1)
         {
             bool valid = false;
@@ -39,14 +34,23 @@ public class Card_Inspire : Card
             {
                 Card randomCard = cards[Random.Range(0, cards.Count - 1)];
 
-                if (!randomCard.cardLabel.Equals(cardLabel))
+                if (!randomCard.cardLabel.Equals(cardLabel) && randomCard.GetDamage() != 0)
                 {
                     randomCard.AddDamage(damage);
                     playerManager.UpdateCard(randomCard);
 
                     valid = true;
                 }
+
+                tries++;
+
+                if (tries > 20)
+                {
+                    break;
+                }
             }
+
+            AudioManager.Instance.PlayOneShot("wave");
         }
         else
         {

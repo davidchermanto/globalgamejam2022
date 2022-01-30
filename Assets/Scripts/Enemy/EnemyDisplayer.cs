@@ -21,11 +21,14 @@ public class EnemyDisplayer : MonoBehaviour
     [SerializeField] private BoxCollider2D boxCollider;
 
     [Header("Prefabs")]
+    [SerializeField] private GameObject damageIndicator;
     [SerializeField] private GameObject lightParticle;
     [SerializeField] private GameObject darkParticle;
 
     public void Setup(Sprite sprite, int health, int attack, bool isLight, Enemy enemy)
     {
+        spriteRenderer.gameObject.SetActive(true);
+
         spriteRenderer.color = new Color(1, 1, 1, 1);
         shadow.color = new Color(0, 0, 0, 0.588f);
 
@@ -153,6 +156,14 @@ public class EnemyDisplayer : MonoBehaviour
         StartCoroutine(AttackCoroutine());
     }
 
+    public void SpawnIndicator(int damage, bool isPlayer)
+    {
+        GameObject indicator = Instantiate(damageIndicator);
+        indicator.transform.position = transform.position;
+
+        indicator.GetComponent<DamageIndicator>().SetDamage(damage, isPlayer);
+    }
+
     private IEnumerator AttackCoroutine()
     {
         float timer = 0;
@@ -225,6 +236,7 @@ public class EnemyDisplayer : MonoBehaviour
             yield return new WaitForEndOfFrame();
         }
 
+        spriteRenderer.gameObject.SetActive(false);
         Destroy(particles);
     }
 

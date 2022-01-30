@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using TMPro;
+
 public class GameManager : MonoBehaviour
 {
     [Header("Managers")]
@@ -20,13 +22,24 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Enemy enemyMid;
     [SerializeField] private Enemy enemyRight;
 
+    [Header("Card Chooser")]
+    [SerializeField] private Card leftCard;
+    [SerializeField] private Card rightCard;
+
     [Header("Other")]
     public bool isEnemyTurn;
 
     [SerializeField] public List<string> possibleCards;
     [SerializeField] public List<string> possibleEnemies;
 
+    [SerializeField] private TextMeshProUGUI wave;
     [SerializeField] private int currentFloor;
+
+    [SerializeField] private GameObject gameOverCanvas;
+    [SerializeField] private TextMeshProUGUI waveGameOver;
+
+    [SerializeField] private GameObject bag;
+    [SerializeField] private TextMeshProUGUI bagText;
 
     void Start()
     {
@@ -34,6 +47,7 @@ public class GameManager : MonoBehaviour
         enemyDatabase.Setup();
 
         playerManager.Setup(GenerateInitialCards());
+        wave.SetText("WAVE - " + currentFloor.ToString());
 
         OnPlay();
     }
@@ -41,7 +55,7 @@ public class GameManager : MonoBehaviour
     private List<Card> GenerateInitialCards()
     {
         List<Card> initialCards = new List<Card>();
-
+        
         string label = "inkslice";
 
         Card card = cardDatabase.GetNewCard(label);
@@ -49,7 +63,7 @@ public class GameManager : MonoBehaviour
         card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
 
         initialCards.Add(card);
-
+        
         card = cardDatabase.GetNewCard(label);
         card.Setup();
         card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
@@ -70,15 +84,15 @@ public class GameManager : MonoBehaviour
 
         initialCards.Add(card);
 
-        card = cardDatabase.GetNewCard(label);
-        card.Setup();
-        card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
-
         label = "inspire";
 
         card = cardDatabase.GetNewCard(label);
         card.Setup();
         card.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        initialCards.Add(card);
+
+        label = "manifest";
 
         card = cardDatabase.GetNewCard(label);
         card.Setup();
@@ -111,6 +125,28 @@ public class GameManager : MonoBehaviour
         StartCoroutine(EnemyTurnCoroutine());
     }
 
+    public void OnGameOver()
+    {
+        gameOverCanvas.SetActive(true);
+
+        enemyLeftDisplayer.gameObject.SetActive(false);
+        enemyMidDisplayer.gameObject.SetActive(false);
+        enemyRightDisplayer.gameObject.SetActive(false);
+
+        waveGameOver.SetText("WAVE - " + currentFloor.ToString());
+    }
+
+    public void OnOpenBag()
+    {
+        bag.SetActive(true);
+        bagText.SetText(playerManager.GetCardToString());
+    }
+
+    public void OnCloseBag()
+    {
+        bag.SetActive(false);
+    }
+
     private IEnumerator EnemyTurnCoroutine()
     {
         isEnemyTurn = true;
@@ -120,7 +156,7 @@ public class GameManager : MonoBehaviour
         List<Enemy> enemies = GetLivingEnemies();
         int enemyLooped = 0;
 
-        yield return new WaitForSeconds(delayPerEnemy);
+        yield return new WaitForSeconds(delayPerEnemy * 3);
 
         while (enemyLooped != enemies.Count)
         {
@@ -146,7 +182,18 @@ public class GameManager : MonoBehaviour
 
     public void OnClearFloor()
     {
+        wave.SetText("WAVE - " + currentFloor.ToString());
         playerManager.DeleteAllCards();
+
+        if (Random.Range(0, 2) == 0)
+        {
+            AudioManager.Instance.PlayOneShot("battle1");
+        }
+        else
+        {
+            AudioManager.Instance.PlayOneShot("battle2");
+        }
+
         StartCoroutine(ClearAnimation());
     }
 
@@ -154,12 +201,50 @@ public class GameManager : MonoBehaviour
     {
         currentFloor++;
 
-        // offer player a new card?
+        // offer player a new card
+        yield return new WaitForSeconds(1);
 
-        // play mountain animation for 3 secs
-        yield return new WaitForSeconds(3);
+        isEnemyTurn = false;
 
-        // generate new enemies
+        OfferCards();
+    }
+
+    public void OfferCards()
+    {
+        string label = possibleCards[Random.Range(0, possibleCards.Count)];
+
+        leftCard = cardDatabase.GetNewCard(label);
+        leftCard.Setup();
+        leftCard.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        label = possibleCards[Random.Range(0, possibleCards.Count)];
+
+        rightCard = cardDatabase.GetNewCard(label);
+        rightCard.Setup();
+        rightCard.SetupDependencies(cardDatabase.GetSprite(label), playerManager, this);
+
+        cardDisplayer.OnChooseCard(leftCard, rightCard);
+    }
+
+    public void ChooseLeftCard()
+    {
+        AudioManager.Instance.PlayOneShot("turnend");
+
+        playerManager.AddOwnedCard(leftCard);
+
+        cardDisplayer.CloseChooser();
+
+        OnPlay();
+    }
+
+    public void ChooseRightCard()
+    {
+        AudioManager.Instance.PlayOneShot("turnend");
+
+        playerManager.AddOwnedCard(rightCard);
+
+        cardDisplayer.CloseChooser();
+
         OnPlay();
     }
 
@@ -172,24 +257,23 @@ public class GameManager : MonoBehaviour
 
     public Enemy GenerateEnemy(string direction)
     {
-        string label = possibleEnemies[Random.Range(0, 2 /*Mathf.Min(currentFloor + 2, 10)*/)];
+        string label = possibleEnemies[Random.Range(0, Mathf.Min(currentFloor + 2, 10))];
 
         Enemy enemy = enemyDatabase.GetEnemy(label);
         EnemyStruct enemyStruct = enemyDatabase.GetEnemyStruct(currentFloor, label);
-        Sprite enemySprite = enemyDatabase.GetEnemySprite(label);
 
         enemy.SetColor();
 
         switch (direction)
         {
             case "left":
-                enemy.Setup(enemyStruct, enemyLeftDisplayer, playerManager, enemySprite);
+                enemy.Setup(enemyStruct, enemyLeftDisplayer, playerManager, enemyStruct.display);
                 break;
             case "mid":
-                enemy.Setup(enemyStruct, enemyMidDisplayer, playerManager, enemySprite);
+                enemy.Setup(enemyStruct, enemyMidDisplayer, playerManager, enemyStruct.display);
                 break;
             case "right":
-                enemy.Setup(enemyStruct, enemyRightDisplayer, playerManager, enemySprite);
+                enemy.Setup(enemyStruct, enemyRightDisplayer, playerManager, enemyStruct.display);
                 break;
         }
 

@@ -34,10 +34,15 @@ public class CardDisplayer : MonoBehaviour
     [SerializeField] private Sprite darkCard;
     [SerializeField] private int currentId;
 
+    [Header("Card chooser")]
+    [SerializeField] private GameObject chooserCanvas;
+    [SerializeField] private CardDisplay leftCard;
+    [SerializeField] private CardDisplay rightCard;
+
     [Header("Pre-stored positions")]
     private Vector3 cardScale = new Vector3(1.2f, 1f);
     private Vector3 cardScaleLarge = new Vector3(1.44f, 1.2f);
-    private float slideUpDistance = 1.6f;
+    private float slideUpDistance = 2f;
     private List<List<Vector3>> cardPos = new List<List<Vector3>>
     {
         new List<Vector3>
@@ -225,6 +230,22 @@ public class CardDisplayer : MonoBehaviour
         }
 
         Destroy(cardDisplay.gameObject);
+    }
+
+    public void OnChooseCard(Card left, Card right)
+    {
+        chooserCanvas.SetActive(true);
+
+        leftCard.UpdateValues(left.GetIcon(), left.GetText(), left.GetOrbValue(),
+            GetCardByColor(left.GetIsLight()), currentId, left.GetIsLight(), left.GetTitle());
+
+        rightCard.UpdateValues(right.GetIcon(), right.GetText(), right.GetOrbValue(),
+            GetCardByColor(right.GetIsLight()), currentId, right.GetIsLight(), right.GetTitle());
+    }
+
+    public void CloseChooser()
+    {
+        chooserCanvas.SetActive(false);
     }
 
     public void OnStartDragCard(int cardId)

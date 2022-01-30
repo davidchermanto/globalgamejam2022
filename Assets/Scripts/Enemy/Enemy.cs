@@ -27,6 +27,7 @@ public class Enemy
         this.playerManager = playerManager;
 
         enemyDisplayer.Setup(sprite, health, attack, isLight, this);
+        enemyDisplayer.OnSpawn();
     }
 
     public virtual void SetColor()
@@ -45,6 +46,12 @@ public class Enemy
         {
             playerManager.TakeDamage(attack, isLight);
             enemyDisplayer.OnAttack();
+            enemyDisplayer.SpawnIndicator(attack, true);
+
+            attack++;
+            enemyDisplayer.UpdateAttack(attack);
+
+            AudioManager.Instance.PlayOneShot("hitverylight");
         }
     }
 
@@ -63,6 +70,7 @@ public class Enemy
             enemyDisplayer.OnDie();
         }
 
+        enemyDisplayer.SpawnIndicator(damage, false);
         enemyDisplayer.OnAttacked();
     }
 

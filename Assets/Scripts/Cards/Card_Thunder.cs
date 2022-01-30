@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Card_InkSlice : Card
+public class Card_Thunder : Card
 {
     public override void Setup()
     {
-        cardName = "Ink Slice";
-        cardLabel = "inkslice";
-        text = "Deals <damage> Damage to 1 target. Gains <orbValue> <orbColor> Orb.";
+        cardName = "Thunder";
+        cardLabel = "thunder";
+        text = "Deals <damage> Damage to 1 target twice. Gains <orbValue> <orbColor> Orbs.";
 
-        damage = Random.Range(5, 7);
-        orbValue = 1;
+        damage = Random.Range(6, 8);
+        orbValue = 2;
 
         singleTarget = true;
         passive = false;
-        
-        if(Random.Range(0, 2) == 0)
+
+        if (Random.Range(0, 2) == 0)
         {
             isLight = true;
         }
@@ -28,15 +28,15 @@ public class Card_InkSlice : Card
 
     public override void OnUseTargetted(Enemy enemy)
     {
-        // deal damage
+        enemy.OnTakeDamage(damage, isLight);
         enemy.OnTakeDamage(damage, isLight);
 
         playerManager.AddOrb(orbValue, isLight);
 
         // do visual effects
         playerManager.DisplayAttackEffect(enemy.GetEnemyDisplayer(), "slash");
+        AudioManager.Instance.PlayOneShot("hitheavy");
 
         CameraEffects.Instance.Shake();
-        AudioManager.Instance.PlayOneShot("hitheavy");
     }
 }

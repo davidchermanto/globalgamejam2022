@@ -21,7 +21,6 @@ public class PlayerManager : MonoBehaviour
 
     [Header("Combat")]
     public bool isPlayerTurn;
-    [SerializeField] private int maxHealth;
     [SerializeField] private int health;
 
     // Why not only 1 orb, with dark being 0 to -5?
@@ -34,12 +33,11 @@ public class PlayerManager : MonoBehaviour
 
     [Header("Effects")]
     [SerializeField] private List<GameObject> specialEffects;
+    [SerializeField] private CanvasGroup whiteScreen;
 
     public void Setup(List<Card> initialCards)
     {
         ownedCards = initialCards;
-
-        maxHealth = baseHealth;
         health = baseHealth;
 
         UpdateHealthBar();
@@ -124,6 +122,12 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    public void OnHeal(int amount)
+    {
+        health += amount;
+        UpdateHealthBar();
+    }
+
     public void TakeDamage(int damage, bool isLight)
     {
         foreach(Card card in activeCards)
@@ -142,7 +146,7 @@ public class PlayerManager : MonoBehaviour
 
     public void OnDefeat()
     {
-
+        gameManager.OnGameOver();
     }
 
     public void OnDefeatEnemy()
@@ -156,6 +160,7 @@ public class PlayerManager : MonoBehaviour
     public void OnStartTurn()
     {
         DrawCards();
+        OnHeal(1);
     }
 
     public void OnEndTurn()
@@ -170,6 +175,7 @@ public class PlayerManager : MonoBehaviour
             cardDisplayer.DestroyAllCards();
 
             gameManager.OnEnemyTurn();
+            AudioManager.Instance.PlayOneShot("turnend");
         }
     }
 
@@ -211,12 +217,12 @@ public class PlayerManager : MonoBehaviour
 
     private void TestOrbOverload()
     {
-        if(lightOrb > maxOrbs)
+        if(lightOrb >= maxOrbs)
         {
             OnOrbOverload(true);
         }
 
-        if(darkOrb > maxOrbs)
+        if(darkOrb >= maxOrbs)
         {
             OnOrbOverload(true);
         }
@@ -229,7 +235,31 @@ public class PlayerManager : MonoBehaviour
         darkOrb = 0;
         lightOrb = 0;
 
+        WhiteScreen();
         UpdateOrbDisplay();
+    }
+
+    private void WhiteScreen()
+    {
+        whiteScreen.alpha = 1;
+        StartCoroutine(FadeWhiteScreen());
+    }
+
+    private IEnumerator FadeWhiteScreen()
+    {
+        float timer = 0;
+        float fadeTime = 1;
+
+        yield return new WaitForSeconds(0.6f);
+
+        while(timer < 1)
+        {
+            timer += Time.deltaTime / fadeTime;
+
+            whiteScreen.alpha = Mathf.Lerp(1, 0, timer);
+
+            yield return new WaitForEndOfFrame();
+        }
     }
 
     public void UpdateCard(Card card)
@@ -385,16 +415,6 @@ public class PlayerManager : MonoBehaviour
         this.health = health;
     }
 
-    public int GetMaxHealth()
-    {
-        return maxHealth;
-    }
-
-    public void SetMaxHealth(int maxHealth)
-    {
-        this.maxHealth = maxHealth;
-    }
-
     public int GetLightOrb()
     {
         return lightOrb;
@@ -403,5 +423,17 @@ public class PlayerManager : MonoBehaviour
     public int GetDarkOrb()
     {
         return darkOrb;
+    }
+
+    public string GetCardToString()
+    {
+        string newString = "";
+
+        foreach(Card card in ownedCards)
+        {
+            newString += card.cardName + ": " + card.GetText() + "\n";
+        }
+
+        return newString;
     }
 }

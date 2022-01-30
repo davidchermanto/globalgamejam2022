@@ -11,19 +11,12 @@ public class Card_InkSplash : Card
         text = "Deals <damage> Damage to all targets. Gains <orbValue> <orbColor> Orb.";
 
         damage = Random.Range(3, 4);
-        orbValue = 2;
+        orbValue = 1;
 
         singleTarget = false;
         passive = false;
 
-        if (Random.Range(0, 2) == 0)
-        {
-            isLight = true;
-        }
-        else
-        {
-            isLight = false;
-        }
+        isLight = false;
     }
 
     public override void OnUse()
@@ -41,5 +34,7 @@ public class Card_InkSplash : Card
                 CameraEffects.Instance.Shake();
             }
         }
+
+        AudioManager.Instance.PlayOneShot("hitlight");
     }
 }

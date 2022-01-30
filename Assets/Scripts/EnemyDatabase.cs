@@ -19,7 +19,6 @@ public struct EnemyStruct
 public class EnemyDatabase : MonoBehaviour
 {
     [SerializeField] public List<EnemyStruct> enemies;
-    [SerializeField] public List<Sprite> enemySprites;
 
     public void Setup()
     {
@@ -38,6 +37,30 @@ public class EnemyDatabase : MonoBehaviour
             case "biter_dark":
                 enemy = new Enemy_Biter_Dark();
                 break;
+            case "shieldy_light":
+                enemy = new Enemy_Shieldy_Light();
+                break;
+            case "shieldy_dark":
+                enemy = new Enemy_Shieldy_Dark();
+                break;
+            case "vampire_light":
+                enemy = new Enemy_Vampire_Light();
+                break;
+            case "vampire_dark":
+                enemy = new Enemy_Vampire_Dark();
+                break;
+            case "onion_dark":
+                enemy = new Enemy_Onion_Dark();
+                break;
+            case "onion_light":
+                enemy = new Enemy_Onion_Light();
+                break;
+            case "beast_light":
+                enemy = new Enemy_Beast_Light();
+                break;
+            case "beast_dark":
+                enemy = new Enemy_Beast_Dark();
+                break;
             default:
                 Debug.LogError("Not found label: " + label);
                 break;
@@ -48,7 +71,7 @@ public class EnemyDatabase : MonoBehaviour
 
     public EnemyStruct GetEnemyStruct(int floor, string label)
     {
-        float difficultyMultiplier = 1.1f;
+        float difficultyMultiplier = 1.04f;
 
         EnemyStruct enemyStruct = new EnemyStruct();
 
@@ -70,25 +93,5 @@ public class EnemyDatabase : MonoBehaviour
         enemyStruct.attack = Mathf.FloorToInt((enemyStruct.attack + Mathf.FloorToInt(enemyStruct.attackPerFloor * floor)) * (Mathf.Pow(difficultyMultiplier, floor)));
 
         return enemyStruct;
-    }
-
-    public Sprite GetEnemySprite(string label)
-    {
-        Sprite sprite = null;
-
-        switch (label)
-        {
-            case "biter_light":
-                sprite = enemySprites[0];
-                break;
-            case "biter_dark":
-                sprite = enemySprites[1];
-                break;
-            default:
-                Debug.LogError("Label not valid: " + label);
-                break;
-        }
-
-        return sprite;
     }
 }
