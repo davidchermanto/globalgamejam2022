@@ -41,6 +41,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject bag;
     [SerializeField] private TextMeshProUGUI bagText;
 
+    [SerializeField] private GameObject endTurnButton;
+
     void Start()
     {
         cardDisplayer.Setup();
@@ -133,13 +135,22 @@ public class GameManager : MonoBehaviour
         enemyMidDisplayer.gameObject.SetActive(false);
         enemyRightDisplayer.gameObject.SetActive(false);
 
+        endTurnButton.SetActive(false);
+
         waveGameOver.SetText("WAVE - " + currentFloor.ToString());
     }
 
     public void OnOpenBag()
     {
-        bag.SetActive(true);
-        bagText.SetText(playerManager.GetCardToString());
+        if (bag.activeInHierarchy)
+        {
+            OnCloseBag();
+        }
+        else
+        {
+            bag.SetActive(true);
+            bagText.SetText(playerManager.GetCardToString());
+        }
     }
 
     public void OnCloseBag()

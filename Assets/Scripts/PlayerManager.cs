@@ -241,6 +241,7 @@ public class PlayerManager : MonoBehaviour
 
     private void WhiteScreen()
     {
+        whiteScreen.gameObject.SetActive(true);
         whiteScreen.alpha = 1;
         StartCoroutine(FadeWhiteScreen());
     }
@@ -260,6 +261,8 @@ public class PlayerManager : MonoBehaviour
 
             yield return new WaitForEndOfFrame();
         }
+
+        whiteScreen.gameObject.SetActive(false);
     }
 
     public void UpdateCard(Card card)

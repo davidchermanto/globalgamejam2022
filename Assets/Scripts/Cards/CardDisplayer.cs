@@ -162,6 +162,7 @@ public class CardDisplayer : MonoBehaviour
         {
             eventID = EventTriggerType.PointerDown
         };
+        
         pointerDown.callback.AddListener(delegate { OnStartDragCard(card.displayId); });
         eventTrigger.triggers.Add(pointerDown);
 
